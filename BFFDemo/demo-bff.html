@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Demo BFF - Web/Móvil</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2em; }
+    select, button { font-size: 1em; margin: 0.5em; }
+    table { border-collapse: collapse; margin-top: 1em; }
+    th, td { border: 1px solid #ccc; padding: 0.5em 1em; }
+    th { background: #f0f0f0; }
+  </style>
+</head>
+<body>
+  <h1>Demo Backend For Frontend (BFF)</h1>
+  <p style="max-width:600px;">
+    <b>Flujo:</b> El frontend llama al BFF enviando el header <code>X-Client-Type</code>. El BFF adapta la respuesta según el tipo de cliente y consulta al backend.<br>
+    <b>Observa:</b> Cambia el tipo de cliente y verás cómo cambia la respuesta y el JSON recibido.
+  </p>
+  <label for="clientType">Tipo de cliente:</label>
+  <select id="clientType">
+    <option value="web">Web</option>
+    <option value="mobile">Móvil</option>
+  </select>
+  <button onclick="loadProducts()">Cargar productos</button>
+  <div id="callinfo" style="margin-top:1em;"></div>
+  <div id="result"></div>
+  <div id="json" style="margin-top:1em; font-size:0.95em; background:#f9f9f9; border:1px solid #ccc; padding:1em;"></div>
+  <script>
+    async function loadProducts() {
+      const clientType = document.getElementById('clientType').value;
+      const url = 'http://localhost:5207/api/store/products';
+      document.getElementById('callinfo').innerHTML =
+        `<b>URL llamada:</b> <code>${url}</code><br>` +
+        `<b>Header enviado:</b> <code>X-Client-Type: ${clientType}</code>`;
+      let res, data, raw;
+      try {
+        res = await fetch(url, { headers: { 'X-Client-Type': clientType } });
+        raw = await res.clone().text();
+        data = await res.json();
+      } catch (e) {
+        document.getElementById('result').innerHTML = '<p style="color:red;">Error al llamar al BFF.</p>';
+        document.getElementById('json').innerText = '';
+        return;
+      }
+      let html = '';
+      if (!Array.isArray(data) || data.length === 0) {
+        html = '<p>No hay productos disponibles o hubo un error.</p>';
+      } else if (clientType === 'web') {
+        html = '<table><tr><th>Nombre</th><th>Precio</th></tr>';
+        data.forEach(p => {
+          html += `<tr><td>${p.nombre}</td><td>${p.precio}</td></tr>`;
+        });
+        html += '</table>';
+      } else {
+        html = '<table><tr><th>Nombre</th><th>Stock</th></tr>';
+        data.forEach(p => {
+          html += `<tr><td>${p.name}</td><td>${p.stock}</td></tr>`;
+        });
+        html += '</table>';
+      }
+      document.getElementById('result').innerHTML = html;
+      document.getElementById('json').innerHTML = `<b>Respuesta JSON:</b><br><pre>${raw}</pre>`;
+    }
+  </script>
+</body>
+</html>
